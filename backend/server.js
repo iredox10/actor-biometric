@@ -96,19 +96,176 @@ app.get('/api/staff/:fullname', async(req,res) =>{
 
 app.patch('/api/attendance/:fullname',checkAttendanceLimit, async(req,res)=>{
   try {
-    const staff = await Staff.finOne({fullname: req.params.fullname})
-    
     const attendance = await Staff.findOneAndUpdate({fullname: req.params.fullname},{$push: {
     attendance: {
       status: req.body.status, // or any other status you want to update
       date: new Date(),   // or the specific date you want to update
     }
   }},{new:true})
-  res.json(staff)
+  res.json({attendance})
   } catch (err) {
-    res.json(err)
+    res.json(err.message)
   }
 })
+
+
+app.get('/api/get-staffs', async(req,res) =>{
+  try {
+    const staffs = await Staff.find()
+    res.status(200).json(staffs)
+  } catch (err) {
+    res.status(404).json(err.message)
+  }
+})
+
+app.get("/api/staff/:fullname/attendance/:duration", async (req, res) => {
+  try {
+    const { fullname, duration } = req.params;
+    const staff = await Staff.findOne({ fullname });
+
+    if (!staff) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    let startDate;
+    switch (duration) {
+      case "days":
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case "weeks":
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(startDate.getDate() - startDate.getDay());
+        break;
+      case "months":
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(1);
+        break;
+      default:
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid duration parameter" });
+    }
+
+    const filteredAttendance = staff.attendance.filter(
+      (entry) => entry.date >= startDate
+    );
+
+    res.json({ success: true, attendance: filteredAttendance });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+});
+
+
+// Route to get overall staff attendance for each day, week, or month
+app.get('/api/attendance/:duration', async (req, res) => {
+  try {
+    const { duration } = req.params;
+
+    let startDate;
+    switch (duration) {
+      case 'days':
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'weeks':
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(startDate.getDate() - startDate.getDay());
+        break;
+      case 'months':
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(1);
+        break;
+      default:
+        return res.status(400).json({ success: false, message: "Invalid duration parameter" });
+    }
+
+    const staffAttendance = await Staff.aggregate([
+      {
+        $unwind: "$attendance",
+      },
+      {
+        $match: {
+          "attendance.date": { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            staffId: "$_id",
+            fullname: "$fullname",
+          },
+          totalAttendance: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.json({ success: true, staffAttendance });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+});
+// Route to get overall staff attendance for each day, week, or month
+app.get('/api/attendance/:duration', async (req, res) => {
+  try {
+    const { duration } = req.params;
+
+    let startDate;
+    switch (duration) {
+      case 'days':
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'weeks':
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(startDate.getDate() - startDate.getDay());
+        break;
+      case 'months':
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        startDate.setDate(1);
+        break;
+      default:
+        return res.status(400).json({ success: false, message: "Invalid duration parameter" });
+    }
+
+    const staffAttendance = await Staff.aggregate([
+      {
+        $unwind: "$attendance",
+      },
+      {
+        $match: {
+          "attendance.date": { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            staffId: "$_id",
+            fullname: "$fullname",
+          },
+          totalAttendance: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.json({ success: true, staffAttendance });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
