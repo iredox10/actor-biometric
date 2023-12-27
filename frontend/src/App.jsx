@@ -1,54 +1,17 @@
-import React, { useState, useEffect } from "react";
+import faceIO from "@faceio/fiojs";
+import { FormInput } from "./components/FormInput";
 import axios from "axios";
-import Fingerprint2 from "fingerprintjs2";
-
-
+import { useState } from "react";
+import {useNavigate} from 'react-router-dom'
+import Home  from "./pages/Home";
+const faceio = new faceIO("fioaad72"); // Get the application Public ID at https://console.faceio.net.
 
 function App() {
-  const [studentId, setStudentId] = useState("");
-  const [fingerprintData, setFingerprintData] = useState("");
-
-  useEffect(() => {
-    // Use fingerprintjs2 to capture fingerprint data
-    Fingerprint2.get({}, function (components) {
-      const fingerprint = Fingerprint2.x64hash128(
-        components.map((pair) => pair.value).join(""),
-        31
-      );
-      setFingerprintData(fingerprint);
-    });
-  }, []);
-
-  const markAttendance = async () => {
-    try {
-      await axios.post("http://localhost:3001/api/attendance", {
-        studentId,
-        fingerprintData,
-      });
-      console.log("Attendance marked successfully");
-    } catch (error) {
-      console.error("Error marking attendance:", error.message);
-    }
-  };
-
-  return (
-    <div className="App">
-      <h1>Fingerprint Attendance App</h1>
-      <div>
-        <label>Student ID:</label>
-        <input
-          type="text"
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-        />
-      </div>
-      <div>
-        <label>Fingerprint Data:</label>
-        <input type="text" value={fingerprintData} readOnly />
-      </div>
-      <button onClick={markAttendance}>Mark Attendance</button>
+  return(
+    <div className="">
+      <Home />
     </div>
-  );
-}
+  )
+  }
 
 export default App;
